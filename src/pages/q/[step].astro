@@ -144,14 +144,20 @@ const transitionType = 'crossfade';
     .btn.secondary { background: #e5e7eb; color: #374151; }
 </style>
 
+{/*
+  The logic below ensures that even after a client-side transition (crossfade),
+  the event listeners are re-attached to the 'Next' button.
+*/}
 <script>
     import { formAnswers } from '../../stores/formStore';
     import { navigate } from 'astro:transitions/client';
 
-    document.addEventListener('astro:page-load', () => {
+    // The function that runs the core logic
+    function setupNextButton() {
         const inputs = document.querySelectorAll('input, select, textarea');
         const nextBtn = document.getElementById('nextBtn');
 
+        // 1. REFILL answers from memory
         const currentAnswers = formAnswers.get();
         inputs.forEach(input => {
             if (currentAnswers[input.name]) {
@@ -159,16 +165,31 @@ const transitionType = 'crossfade';
             }
         });
 
-        nextBtn?.addEventListener('click', (e) => {
-            e.preventDefault(); 
-            inputs.forEach(input => {
-                formAnswers.setKey(input.name, input.value);
-            });
-            
-            const nextUrl = document.getElementById('nextBtnScript').dataset.next;
-            navigate(nextUrl);
+        // 2. Clear old listeners and add the new one
+        // We ensure the event listener is removed first, though 'astro:page-load' helps.
+        nextBtn?.removeEventListener('click', handleNextClick);
+        nextBtn?.addEventListener('click', handleNextClick);
+    }
+    
+    // Named handler function
+    function handleNextClick(e) {
+        e.preventDefault(); 
+
+        const inputs = document.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            formAnswers.setKey(input.name, input.value);
         });
-    });
+        
+        // Use the data attribute to determine the next page
+        const nextUrl = document.getElementById('nextBtnScript').dataset.next;
+        navigate(nextUrl);
+    }
+    
+    // Attach the setup function to Astro's lifecycle events
+    document.addEventListener('astro:page-load', setupNextButton);
+    // Also run on initial page load (for the first step)
+    setupNextButton();
 </script>
 
+{/* Pass the next URL to the script safely */}
 <div id="nextBtnScript" data-next={nextUrl} style="display:none;"></div>
