@@ -1,0 +1,168 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { questionnaireData } from '../../config/questions';
+import { appSettings } from '../../config/settings';
+---
+
+<Layout>
+    {/* ADDED: Print Button - Positioned in the top right corner */}
+    <button id="printButton" class="print-button" title="Print Document">
+        Print
+    </button>
+
+    <div class="container">
+        {/* This is what will be styled for PDF output */}
+        <div id="printable-area">
+            <h1 class="pdf-title">{appSettings.title} <br /> Summary</h1>
+            <p class="submission-date">Submission Date: <span id="date-display"></span></p>
+            
+            <div id="answers-container">
+                {questionnaireData.map(section => (
+                    <div class="section-summary">
+                        <h3>{section.title}</h3>
+                        {section.fields.map(q => (
+                            <div class="answer-block">
+                                <div class="label">{q.label}</div>
+                                <div class="value" data-id={q.id}>-</div>
+                            </div>
+                        ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+
+    </div>
+</Layout>
+
+{/* REMOVED: External html2pdf.js script tag */}
+
+<script>
+    import { formAnswers } from '../../stores/formStore';
+    // questionnaireData and appSettings are available via Astro.props implicitly
+
+    document.addEventListener('astro:page-load', () => {
+        const answers = formAnswers.get();
+        document.getElementById('date-display').innerText = new Date().toLocaleDateString();
+        
+        // 1. Fill the document with answers from the Store
+        for (const [key, value] of Object.entries(answers)) {
+            const el = document.querySelector(`.value[data-id="${key}"]`);
+            if (el) el.innerText = value;
+        }
+
+        // 2. NATIVE PRINT FUNCTION (for the dedicated Print Button)
+        document.getElementById('printButton').addEventListener('click', () => {
+            window.print();
+        });
+
+
+    });
+</script>
+
+<style>
+    /* -------------------------------------- */
+    /* NATIVE PRINT BUTTON STYLES */
+    /* -------------------------------------- */
+    .print-button {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        background-color: var(--primary);
+        color: white;
+        border: none;
+        border-radius: var(--radius);
+        font-weight: bold;
+        cursor: pointer;
+        transition: opacity 0.3s, background-color 0.3s;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        z-index: 100; /* Ensure it's above other elements */
+    }
+
+    .print-button:hover {
+        opacity: 0.85;
+        background-color: var(--primary-hover);
+    }
+    
+    /* Hide button when printing */
+    @media print {
+        .print-button, .controls {
+            display: none !important;
+        }
+    }
+    
+    /* -------------------------------------- */
+    /* SUMMARY DOCUMENT STYLES */
+    /* -------------------------------------- */
+    .container { 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        margin: 0; 
+        padding: 0;
+    }
+    #printable-area {
+        background: white; 
+        width: 210mm; /* Fixed width for A4 compatibility */
+        min-height: auto; 
+        padding: 20mm; 
+        position: relative;
+        top: 0;
+        margin-top: 0; 
+        box-shadow: 0 0 15px rgba(0,0,0,0.2); 
+        color: var(--text-color);
+        /* Enforce wrapping and printing stability */
+        word-wrap: break-word; 
+        word-break: break-word; 
+    }
+    
+    /* Title and Date Styles */
+    .pdf-title { 
+        text-align: center; 
+        border-bottom: 2px solid var(--text-color); 
+        padding-bottom: 10px; 
+        font-size: 1.8em;
+    }
+    .submission-date { 
+        text-align: right; 
+        font-size: 0.9em;
+        margin-top: -10px; /* Pull it up closer to the title */
+    }
+
+    /* Section Styles */
+    .section-summary h3 {
+        background:#eee; 
+        padding: 5px; 
+        margin-top: 15px; 
+        border-radius: 4px; 
+        color: var(--text-color);
+        /* Fix for page breaking */
+        page-break-after: avoid; 
+        break-after: avoid; 
+        font-size: 1.2em;
+    }
+    
+    /* Answer Block Styles */
+    .answer-block {
+        page-break-inside: avoid; /* Keep the label/answer together */
+        break-inside: avoid;
+    }
+    .label {
+        font-weight: bold; 
+        color: #555; 
+        margin-top: 10px;
+        display: block; /* Ensure full width for wrapping */
+    }
+    .value {
+        white-space: pre-wrap; /* Preserve user line breaks */
+        margin-bottom: 15px; 
+        border-left: 3px solid var(--primary); 
+        padding-left: 10px;
+        /* Ensure dynamic content wraps */
+        word-wrap: break-word;
+        word-break: break-word;
+    }
+    
+    .controls { margin-bottom: 50px; }
+    .btn { padding: 15px 30px; background: var(--primary); color: white; border: none; font-size: 18px; border-radius: 8px; cursor: pointer; }
+</style>

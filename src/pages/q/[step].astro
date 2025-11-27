@@ -1,0 +1,174 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { questionnaireData } from '../../config/questions'; // ASSUMES OLD NESTED DATA STRUCTURE
+import { ClientRouter } from 'astro:transitions'; 
+
+// This tells Astro to generate pages statically.
+export function getStaticPaths() {
+    // FIX: Correct Array check syntax
+    if (!Array.isArray(questionnaireData)) return [];
+    
+    // Maps over the top-level sections
+    return questionnaireData.map((section) => ({
+        // Assuming your section numbers are sequential starting from 1
+        params: { step: section.step.toString() }, 
+    }));
+}
+
+// 1. Determine which Step we are on
+const { step } = Astro.params;
+const stepIndex = parseInt(step) - 1;
+// This relies on the array being indexed sequentially (0, 1, 2...)
+const currentData = questionnaireData[stepIndex]; 
+
+// 2. Calculate Next/Prev Links
+const isLastStep = stepIndex === questionnaireData.length - 1;
+const nextUrl = isLastStep ? '/q/summary' : `/q/${parseInt(step) + 1}`;
+const prevUrl = stepIndex === 0 ? '/' : `/q/${parseInt(step) - 1}`;
+
+// Animation setup (uses crossfade for stability)
+const transitionKey = 'question-card-id'; 
+const transitionType = 'crossfade'; 
+---
+
+<Layout>
+    <main class="paper" transition:name={transitionKey} transition:animate={transitionType}>
+        <div class="progress">Step {step} of {questionnaireData.length}</div>
+        
+        <h1>{currentData.title}</h1>
+        
+        {/* Render the section introduction text */}
+        {currentData.intro && <p class="intro-text">{currentData.intro}</p>} 
+
+        <form id="engine-form">
+            {currentData.fields.map((field) => (
+                <> {/* Use a Fragment for conditional rendering */}
+                    
+                    {/* 1. RENDER SEGMENT HEADERS/DESCRIPTIONS (type: "display") */}
+                    {field.type === 'display' && (
+                        <div class="segment-header">
+                            <h3>{field.label}</h3>
+                            {field.description && <p class="segment-description">{field.description}</p>}
+                        </div>
+                    )}
+
+                    {/* 2. RENDER INPUT FIELDS (type: "text", "textarea", "select") */}
+                    {field.type !== 'display' && (
+                        <div class="field-group">
+                            <label for={field.id}>{field.label}</label>
+                            
+                            {field.type === 'text' && <input type="text" id={field.id} name={field.id} />}
+                            {field.type === 'textarea' && <textarea id={field.id} name={field.id} rows="4"></textarea>}
+                            {field.type === 'select' && (
+                                <select id={field.id} name={field.id}>
+                                    <option value="" disabled selected>Select an option</option>
+                                    {field.options.map(opt => <option value={opt}>{opt}</option>)}
+                                </select>
+                            )}
+                        </div>
+                    )}
+                </>
+            ))}
+        </form>
+
+        <div class="actions">
+            <a href={prevUrl} class="btn secondary">Back</a>
+            <button id="nextBtn" class="btn primary">Next</button>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    /* Styling for the whole card */
+    .paper {
+        background: var(--paper-bg);
+        width: var(--paper-width);
+        padding: 40px;
+        border-radius: var(--radius);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        height: fit-content;
+        max-width: 90vw;
+    }
+
+    /* Styling for the main section introduction (the `intro` variable) */
+    .intro-text {
+        font-style: italic;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-bottom: 25px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--input-border);
+    }
+    
+    /* ------------------------------------------- */
+    /* STYLING FOR SEGMENT DIVISIONS (Visual Appeal) */
+    /* ------------------------------------------- */
+    .segment-header {
+        margin-top: 30px;
+        margin-bottom: 20px;
+        padding: 10px 15px;
+        border-left: 5px solid var(--primary); /* Strong primary color bar */
+        background-color: var(--input-bg);    /* Light background to separate it */
+        border-radius: 4px;
+    }
+    .segment-header h3 {
+        margin: 0;
+        font-size: 1.2rem;
+        color: var(--primary); /* Highlight title color */
+    }
+    .segment-description {
+        margin-top: 5px;
+        margin-bottom: 0;
+        font-size: 0.95rem;
+        color: #6c757d; /* Slightly muted description text */
+    }
+
+    /* ------------------------------------------- */
+    /* STANDARD FORM STYLES */
+    /* ------------------------------------------- */
+    .field-group { margin-bottom: 24px; }
+    label { display: block; margin-bottom: 8px; font-weight: 600; }
+    input, textarea, select {
+        width: 100%; padding: 12px; border: 1px solid var(--input-border); 
+        background-color: var(--input-bg); border-radius: 6px; font-size: 16px; box-sizing: border-box;
+    }
+    input:focus, textarea:focus, select:focus {
+        border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    .actions { display: flex; justify-content: space-between; margin-top: 32px; }
+    .btn {
+        padding: 12px 24px; border-radius: 6px; text-decoration: none;
+        font-weight: bold; cursor: pointer; border: none; font-size: 16px;
+    }
+    .btn.primary { background: var(--primary); color: white; }
+    .btn.secondary { background: #e5e7eb; color: #374151; }
+</style>
+
+<script>
+    import { formAnswers } from '../../stores/formStore';
+    import { navigate } from 'astro:transitions/client';
+
+    document.addEventListener('astro:page-load', () => {
+        const inputs = document.querySelectorAll('input, select, textarea');
+        const nextBtn = document.getElementById('nextBtn');
+
+        const currentAnswers = formAnswers.get();
+        inputs.forEach(input => {
+            if (currentAnswers[input.name]) {
+                input.value = currentAnswers[input.name];
+            }
+        });
+
+        nextBtn?.addEventListener('click', (e) => {
+            e.preventDefault(); 
+            inputs.forEach(input => {
+                formAnswers.setKey(input.name, input.value);
+            });
+            
+            const nextUrl = document.getElementById('nextBtnScript').dataset.next;
+            navigate(nextUrl);
+        });
+    });
+</script>
+
+<div id="nextBtnScript" data-next={nextUrl} style="display:none;"></div>

@@ -1,0 +1,44 @@
+---
+import { ClientRouter } from 'astro:transitions'; 
+import '../config/theme.css';
+import { appSettings } from '../config/settings';
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width" />
+        <title>{appSettings.title}</title>
+        <ClientRouter />
+        <style>
+            body {
+                background-color: var(--bg-color);
+                font-family: var(--font-main);
+                color: var(--text-color);
+                display: flex;
+                justify-content: center;
+                align-items: center; /* Vertical Centering */
+                min-height: 100vh;
+                margin: 0;
+                padding-top: 0px;
+
+                /* Background Image Styles */
+                background-image: var(--page-bg-image);
+                background-size: cover;          
+                background-position: center center;
+                background-attachment: fixed;    
+            }
+
+            /* Custom View Transition Animations (Used if global body is set to 'fade') */
+            /* This is here to ensure transitions are smooth even if body is set to 'fade' */
+            @keyframes slide-left { from { transform: translateX(100%); } to { transform: translateX(0); } }
+            @keyframes slide-right { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+            @keyframes slideCurrent { to { opacity: 0; transform: translateX(-100%); } }
+        </style>
+    </head>
+    {/* Setting to 'fade' allows local animations (like crossfade) to take precedence */}
+    <body transition:animate="fade"> 
+        <slot />
+    </body>
+</html>

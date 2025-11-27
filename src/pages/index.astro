@@ -1,0 +1,55 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { appSettings } from '../config/settings';
+---
+
+<Layout>
+    <div class="welcome-card">
+        <h1>{appSettings.title}</h1>
+        <p>Welcome to the Visionary Re-Alignment Process. This questionnaire is designed to map your energy, identify barriers, and gamify your path to your ideal future.</p>
+        
+        <div class="actions">
+            <button id="startBtn" class="btn primary">Start Questionnaire</button>
+        </div>
+        
+        <p class="small-text">Your progress is saved automatically. Click 'Start' to begin.</p>
+    </div>
+</Layout>
+
+<script>
+    import { formAnswers } from '../stores/formStore';
+    import { navigate } from 'astro:transitions/client';
+
+    document.addEventListener('astro:page-load', () => {
+        const startBtn = document.getElementById('startBtn');
+
+        startBtn?.addEventListener('click', () => {
+            // Reset state on start
+            formAnswers.set({}); 
+            
+            // Navigate to the first question
+            navigate('/q/1');
+        });
+    });
+</script>
+
+<style>
+    .welcome-card {
+        background: var(--paper-bg);
+        width: var(--paper-width);
+        padding: 60px 40px;
+        border-radius: var(--radius);
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    }
+    /* Styles for buttons, etc. */
+    h1 { margin-top: 0; color: var(--primary); }
+    p { color: var(--text-color); opacity: 0.8; line-height: 1.6; margin-bottom: 30px; }
+    .btn {
+        padding: 16px 40px; background: var(--primary); color: white; border: none;
+        border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer;
+        transition: transform 0.2s, background 0.2s;
+    }
+    .btn:hover { transform: scale(1.05); background: var(--primary-hover); }
+    .small-text { margin-top: 30px; font-size: 0.85rem; color: #999; }
+</style>

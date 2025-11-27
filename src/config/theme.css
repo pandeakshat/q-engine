@@ -1,0 +1,29 @@
+
+:root {
+  --theme-bg: #f3f4f6;       /* Light, subtle background */
+  --theme-paper: #ffffff;    /* Pure white paper */
+  --theme-text: #1f2937;     /* Dark text */
+  --theme-border: #e5e7eb;   /* Light border */
+  --theme-input-bg: #f8fafc; /* Very light input background */
+  --page-bg-image: url('https://images.unsplash.com/photo-1627483262614-ad2792039947'); 
+  /* CHANGE THIS URL to your image placed in public/assets/ */
+}
+
+
+:root {
+  /* Brand Colors */
+  --primary: #2563eb;       
+  --primary-hover: #1d4ed8;
+
+  /* Dynamically loaded variables */
+  --bg-color: var(--theme-bg);
+  --paper-bg: var(--theme-paper);
+  --text-color: var(--theme-text);
+  --input-bg: var(--theme-input-bg);
+  --input-border: var(--theme-border);
+
+  /* Dimensions */
+  --font-main: 'Inter', system-ui, sans-serif;
+  --paper-width: 650px; /* Slightly wider for better presentation */
+  --radius: 12px;
+}
